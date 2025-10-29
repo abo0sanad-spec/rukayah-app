@@ -1,0 +1,296 @@
+// تهيئة Supabase
+const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR_ANON_PUBLIC_KEY";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// عناصر DOM
+const tabs = document.querySelectorAll('.tab-btn');
+const sections = document.querySelectorAll('.tab');
+const whoamiEl = document.getElementById('whoami');
+const logoutBtn = document.getElementById('logoutBtn');
+
+// تبديل التبويبات
+tabs.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    tabs.forEach(b=>b.classList.remove('active'));
+    sections.forEach(s=>s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+// حالة المستخدم المحلي (طالبة)
+let studentSession = JSON.parse(localStorage.getItem('studentSession')||'null');
+
+function renderWhoAmI(user){
+  if (studentSession){
+    whoamiEl.textContent = `طالبة: ${studentSession.name} — ${studentSession.class_name}`;
+    return;
+  }
+  if (user && user.email){
+    whoamiEl.textContent = `معلمة/منسقة: ${user.email}`;
+    return;
+  }
+  whoamiEl.textContent = 'غير مسجَّلة دخول';
+}
+
+// مراقبة جلسة Supabase
+async function refreshAuth(){
+  const { data: { session } } = await supabase.auth.getSession();
+  renderWhoAmI(session?.user || null);
+}
+refreshAuth();
+
+logoutBtn.addEventListener('click', async ()=>{
+  studentSession = null;
+  localStorage.removeItem('studentSession');
+  await supabase.auth.signOut();
+  renderWhoAmI(null);
+  loadMyInitiatives(); // يفرغ القائمة
+});
+
+// —————————————— دخول الطالبة عبر الرمز ——————————————
+const claimBtn = document.getElementById('claimTokenBtn');
+claimBtn?.addEventListener('click', async ()=>{
+  const token = document.getElementById('studentToken').value.trim();
+  if (!token) return;
+  const { data, error } = await supabase.rpc('claim_student_token', { p_token: token });
+  if (error){ alert('رمز غير صالح أو منتهي.'); return; }
+  // حفظ هوية الطالبة محليًا
+  studentSession = { id: data.id, name: data.name, class_name: data.class_name };
+  localStorage.setItem('studentSession', JSON.stringify(studentSession));
+  renderWhoAmI(null);
+  await loadMyInitiatives();
+  alert('تم الدخول بنجاح.');
+});
+
+// —————————————— إرسال OTP للمعلمة/المنسقة ——————————————
+document.getElementById('sendOtpBtn')?.addEventListener('click', async ()=>{
+  const email = document.getElementById('teacherEmail').value.trim();
+  if (!email) return;
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href }
+  });
+  if (error){ alert('تعذر الإرسال.'); return; }
+  alert('تم إرسال رابط الدخول إلى بريدك.');
+});
+
+// —————————————— واجهة الطالبة: إضافة مبادرة ——————————————
+const impactSlider = document.getElementById('impactFactor');
+const impactVal = document.getElementById('impactVal');
+impactSlider?.addEventListener('input', ()=>{
+  impactVal.textContent = impactSlider.value;
+});
+
+document.getElementById('submitInitiativeBtn')?.addEventListener('click', async ()=>{
+  if (!studentSession){ alert('يرجى الدخول أولاً.'); return; }
+  const title = document.getElementById('title').value.trim();
+  const description = document.getElementById('description').value.trim();
+  const value_category = document.getElementById('valueCategory').value;
+  const impact_factor = parseFloat(document.getElementById('impactFactor').value);
+  const evidence_factor = document.getElementById('hasEvidence').checked ? 1.2 : 1.0;
+
+  if (!title){ alert('أدخلي العنوان.'); return; }
+
+  const { error } = await supabase.from('initiatives').insert({
+    student_id: studentSession.id,
+    student_name: studentSession.name,
+    class_name: studentSession.class_name,
+    value_category, title, description,
+    submitted_at: new Date().toISOString(),
+    status: 'pending',
+    base_points: 10,
+    value_weight: null,
+    impact_factor,
+    evidence_factor,
+    penalty: 0,
+    total_points: null
+  });
+  if (error){ alert('تعذر الإرسال.'); return; }
+  document.getElementById('title').value='';
+  document.getElementById('description').value='';
+  await loadMyInitiatives();
+  alert('تم إرسال المبادرة.');
+});
+
+// تحميل مبادراتي
+async function loadMyInitiatives(){
+  const tbody = document.querySelector('#myInitiatives tbody');
+  tbody.innerHTML = '';
+  if (!studentSession) return;
+  const { data, error } = await supabase
+    .from('initiatives')
+    .select('*')
+    .eq('student_id', studentSession.id)
+    .order('submitted_at', { ascending:false });
+  if (error) return;
+  data.forEach(r=>{
+    const tr = document.createElement('tr');
+    const dt = new Date(r.submitted_at);
+    tr.innerHTML = `<td>${dt.toLocaleDateString('ar-SA')}</td>
+      <td>${r.title||''}</td>
+      <td>${r.status||''}</td>
+      <td>${r.total_points?.toFixed?.(2) || '-'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+loadMyInitiatives();
+
+// —————————————— مراجعة المبادرات (معلمة/منسقة) ——————————————
+async function loadPending(){
+  const tbody = document.querySelector('#pendingTable tbody');
+  tbody.innerHTML='';
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+  const { data, error } = await supabase
+    .from('initiatives')
+    .select('*')
+    .eq('status','pending')
+    .order('submitted_at', { ascending:false });
+  if (error) return;
+  data.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.student_name}</td>
+      <td>${r.class_name}</td>
+      <td>${r.value_category}</td>
+      <td>${r.title}</td>
+      <td>${r.description||''}</td>
+      <td>${new Date(r.submitted_at).toLocaleString('ar-SA')}</td>
+      <td class="actions">
+        <button data-act="approve" data-id="${r.id}">اعتماد</button>
+        <button class="secondary" data-act="return" data-id="${r.id}">إرجاع</button>
+        <button class="secondary" data-act="reject" data-id="${r.id}">رفض</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+async function handleAction(id, act){
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session){ alert('يلزم الدخول.'); return; }
+
+  // حساب النقاط عند الاعتماد
+  let patch = { status: act==='approve'?'approved':act==='return'?'returned':'rejected',
+                reviewed_at: new Date().toISOString(),
+                reviewer: session.user.email };
+  if (act==='approve'){
+    const { data, error } = await supabase.from('initiatives').select('*').eq('id', id).single();
+    if (error || !data){ alert('تعذر التحديث.'); return; }
+    const valueWeights = { 'الانضباط':1.0, 'التعاون':1.1, 'الأمانة':1.2, 'العزيمة':1.15 };
+    const base = 10;
+    const vw = valueWeights[data.value_category] ?? 1.0;
+    const impact = Number(data.impact_factor||1.0);
+    const evidence = Number(data.evidence_factor||1.0);
+    const total = base * vw * impact * evidence - 0;
+    patch.base_points = base;
+    patch.value_weight = vw;
+    patch.penalty = 0;
+    patch.total_points = Number(total.toFixed(2));
+  }
+  const { error: upErr } = await supabase.from('initiatives').update(patch).eq('id', id);
+  if (upErr){ alert('فشل التحديث.'); return; }
+  await loadPending();
+  await loadHonorBoard();
+  await loadMonthlyReport();
+}
+document.querySelector('#pendingTable')?.addEventListener('click', (e)=>{
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  const id = btn.getAttribute('data-id');
+  const act = btn.getAttribute('data-act');
+  handleAction(id, act);
+});
+
+// —————————————— لوحة الشرف الأسبوعية ——————————————
+async function loadHonorBoard(){
+  const list = document.getElementById('honorBoard');
+  list.innerHTML='';
+  // عرض هذا الأسبوع فقط من العرض
+  const { data, error } = await supabase
+    .from('initiatives_weekly')
+    .select('*');
+  if (error) return;
+  // ترتيب وأخذ أفضل 10
+  const top = data.sort((a,b)=> b.total_points_sum - a.total_points_sum).slice(0,10);
+  top.forEach((r,i)=>{
+    const li = document.createElement('li');
+    li.textContent = `${r.student_name} — ${r.class_name} — ${r.total_points_sum.toFixed(2)} نقطة`;
+    list.appendChild(li);
+  });
+}
+
+// —————————————— التقرير الشهري حسب القيم ——————————————
+async function loadMonthlyReport(){
+  const tbody = document.querySelector('#monthlyReport tbody');
+  tbody.innerHTML='';
+  const { data, error } = await supabase
+    .from('initiatives_monthly_values')
+    .select('*')
+    .order('month', { ascending:false });
+  if (error) return;
+  data.forEach(r=>{
+    const tr = document.createElement('tr');
+    const m = new Date(r.month);
+    tr.innerHTML = `<td>${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,'0')}</td>
+      <td>${r.value_category}</td>
+      <td>${r.initiatives_count}</td>
+      <td>${Number(r.total_points_sum||0).toFixed(2)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// —————————————— تصدير CSV بترميز UTF-8 BOM ——————————————
+function toCSV(rows){
+  const esc = (v)=>`"${String(v??'').replace(/"/g,'""')}"`;
+  return rows.map(r=>Object.values(r).map(esc).join(',')).join('\n');
+}
+function downloadCSV(filename, rows){
+  const bom = new Uint8Array([0xEF,0xBB,0xBF]);
+  const blob = new Blob([bom, toCSV(rows)], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// تصدير "مبادراتي"
+document.getElementById('exportMyCsv')?.addEventListener('click', async ()=>{
+  if (!studentSession) return;
+  const { data } = await supabase.from('initiatives').select('*').eq('student_id', studentSession.id).order('submitted_at', { ascending:false });
+  const rows = (data||[]).map(r=>({
+    التاريخ: new Date(r.submitted_at).toLocaleString('ar-SA'),
+    العنوان: r.title||'',
+    الوصف: r.description||'',
+    القيمة: r.value_category||'',
+    الحالة: r.status||'',
+    النقاط: r.total_points??''
+  }));
+  downloadCSV('مبادراتي.csv', rows);
+});
+
+// تصدير تقرير المدرسة
+document.getElementById('exportSchoolCsv')?.addEventListener('click', async ()=>{
+  const { data } = await supabase
+    .from('initiatives')
+    .select('*')
+    .eq('status','approved');
+  const rows = (data||[]).map(r=>({
+    الطالبة: r.student_name,
+    الصف: r.class_name,
+    القيمة: r.value_category,
+    العنوان: r.title,
+    الوصف: r.description||'',
+    التاريخ: new Date(r.reviewed_at||r.submitted_at).toLocaleString('ar-SA'),
+    النقاط: r.total_points??''
+  }));
+  downloadCSV('تقرير_المدرسة.csv', rows);
+});
+
+// تحميل عناصر التقارير عند توفر جلسة
+supabase.auth.onAuthStateChange((_event, session)=>{
+  renderWhoAmI(session?.user||null);
+  loadPending();
+  loadHonorBoard();
+  loadMonthlyReport();
+});
