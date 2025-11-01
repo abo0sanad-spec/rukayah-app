@@ -48,20 +48,48 @@ logoutBtn.addEventListener('click', async ()=>{
   renderWhoAmI(null);
   loadMyInitiatives(); // يفرغ القائمة
 });
+// ===== دخول الطالبة بالرمز عبر RPC (مع تخزين الجلسة) =====
+async function studentLoginWithToken(token) {
+  const cleaned = (token || '').trim();
+  if (!cleaned) { alert('أدخل رمز الدخول'); return null; }
 
-// —————————————— دخول الطالبة عبر الرمز ——————————————
-const claimBtn = document.getElementById('claimTokenBtn');
-claimBtn?.addEventListener('click', async ()=>{
-  const token = document.getElementById('studentToken').value.trim();
-  if (!token) return;
-  const { data, error } = await supabase.rpc('claim_student_token', { p_token: token });
-  if (error){ alert('رمز غير صالح أو منتهي.'); return; }
-  // حفظ هوية الطالبة محليًا
-  studentSession = { id: data.id, name: data.name, class_name: data.class_name };
+  const { data, error } = await supabase.rpc('claim_student_token', { p_token: cleaned });
+
+  if (error || !data || data.length === 0) {
+    console.error(error || 'No rows from claim_student_token');
+    alert('رمز الدخول غير صالح أو منتهي.');
+    return null;
+  }
+
+  // الدالة عندك ترجع صفًّا واحدًا؛ في بعض الإعدادات ترجع صفوفًا
+  const row = Array.isArray(data) ? data[0] : data;
+
+  const studentSession = {
+    id: row.student_id || row.id,
+    name: row.student_name || row.name,
+    class_name: row.class_name || row.classname || row.class
+  };
+
   localStorage.setItem('studentSession', JSON.stringify(studentSession));
-  renderWhoAmI(null);
-  await loadMyInitiatives();
-  alert('تم الدخول بنجاح.');
+
+  // إن كانت عندك دوال لتحديث الواجهة
+  if (typeof renderWhoAmI === 'function') renderWhoAmI(studentSession);
+  if (typeof loadMyInitiatives === 'function') await loadMyInitiatives();
+
+  return studentSession;
+}
+
+// زر «مطالبة الرمز/الدخول»
+const claimBtn = document.getElementById('claimTokenBtn');
+if (claimBtn) {
+  claimBtn.addEventListener('click', async () => {
+    const input = document.getElementById('studentToken');
+    const token = input ? input.value : '';
+    const session = await studentLoginWithToken(token);
+    if (session) alert('تم الدخول بنجاح.');
+  });
+}
+
 });
 
 // —————————————— إرسال OTP للمعلمة/المنسقة ——————————————
@@ -293,4 +321,24 @@ supabase.auth.onAuthStateChange((_event, session)=>{
   loadPending();
   loadHonorBoard();
   loadMonthlyReport();
+});
+// ===== التقاط الرمز تلقائيًا من رابط الصفحة =====
+function getTokenFromURL() {
+  try {
+    const url = new URL(window.location.href);
+    return url.searchParams.get('token');
+  } catch (_) { return null; }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const t = getTokenFromURL();
+  if (t) {
+    const session = await studentLoginWithToken(t);
+    if (session) {
+      // إزالة الرمز من الرابط بعد الدخول
+      const url = new URL(window.location.href);
+      url.searchParams.delete('token');
+      window.history.replaceState({}, document.title, url.toString());
+    }
+  }
 });
