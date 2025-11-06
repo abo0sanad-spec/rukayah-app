@@ -320,10 +320,7 @@ async function loadHonorBoard() {
   const { data, error } = await supabase.from("initiatives_weekly").select("*");
   if (error) return;
 
-  const top = (data || [])
-    .sort((a, b) => b.total_points_sum - a.total_points_sum)
-    .slice(0, 10);
-
+ const top = (data || []).sort((a, b) => b.total_points_sum - a.total_points_sum);
   top.forEach((r) => {
     const li = document.createElement("li");
     li.textContent = `${r.student_name} — ${r.class_name} — ${r.total_points_sum.toFixed(2)} نقطة`;
