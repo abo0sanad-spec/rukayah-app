@@ -131,3 +131,23 @@ thead th{background:#f9fafb;color:#111}
   padding:8px 14px; border-radius:10px; cursor:pointer;
 }
 .hb-btn:hover{ filter:brightness(1.07); }
+/* تنسيق الأزرار الثانوية (مثل زر خروج وتصدير) */
+button.secondary {
+  background-color: #b58500;   /* ذهبي */
+  color: #ffffff;              /* أبيض */
+  border: none;
+  padding: 6px 12px;           /* حجم أصغر */
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  display: inline-block;       /* يمنع تمدده بعرض الصفحة */
+  width: auto;                 /* يضبط العرض تلقائي حسب النص */
+  min-width: 90px;             /* يعطيه حجمًا متناسقًا */
+  text-align: center;
+  transition: background-color 0.3s ease;
+}
+
+button.secondary:hover {
+  background-color: #d4af37;   /* ذهبي فاتح */
+  color: #0b3d91;              /* أزرق ملكي */
+}
