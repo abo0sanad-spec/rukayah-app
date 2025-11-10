@@ -15,7 +15,7 @@
       <div class="titles">
         <h1>مدرسة رقية الاسلمية</h1>
         <p class="tagline">مبادرة: قيمنا تصنع الأثر</p>
-        <p class="coordinator">المنسقة: وفاء الزومان</p>
+        <p class="coordinator">المنسقة: أ. وفاء الزومان</p>
       </div>
     </div>
   </header>
@@ -103,13 +103,32 @@
         </table>
       </div>
     </section>
-
     <section id="coordinator" class="tab">
-      <div class="card">
-        <h2>لوحة الشرف الأسبوعية</h2>
-        <ol id="honorBoard"></ol>
-      </div>
+      <section id="honorBoardSection" class="hb-card">
+  <header class="hb-header">
+    <h2>قائمة الطالبات المتميزات</h2>
+    <p class="hb-sub">هذه القائمة إحصائية مبنية على مجموع النقاط المعتمدة.</p>
+  </header>
 
+  <div class="hb-table-wrap">
+    <table class="hb-table" dir="rtl">
+      <thead>
+        <tr>
+          <th>اسم الطالبة</th>
+          <th>الصف</th>
+          <th>عدد المبادرات</th>
+          <th>مجموع النقاط</th>
+        </tr>
+      </thead>
+      <tbody id="honorBoardBody">
+        <!-- يُملأ من الجافاسكربت -->
+      </tbody>
+    </table>
+  </div>
+  <footer class="hb-footer">
+    <button id="exportHonorCsv" type="button" class="hb-btn">تصدير CSV</button>
+  </footer>
+</section>
       <div class="card">
         <h2>تقرير شهري حسب القيم</h2>
         <table id="monthlyReport">
@@ -119,13 +138,11 @@
           <tbody></tbody>
         </table>
       </div>
-
       <div class="card">
         <button id="exportSchoolCsv">تصدير CSV — تقرير المدرسة</button>
       </div>
     </section>
   </main>
-
   <footer class="app-footer">
     <small>&copy;  مدرسة رقية الاسلمية - مديرة المدرسة: أ.أمل المهوس</small>
   </footer>
