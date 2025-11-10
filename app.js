@@ -336,16 +336,16 @@ async function loadHonorBoard(){
     .sort((a,b)=>(Number(b.total_points_sum||0) - Number(a.total_points_sum||0)));
 
   // تعبئة الجدول
-  rows.forEach((r, i) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${r.student_name||""}</td>
-      <td>${r.class_name||""}</td>
-      <td>${r.initiatives_count ?? "-"}</td>
-      <td>${Number(r.total_points_sum||0).toFixed(2)}</td>
-    `;
-    tbody.appendChild(tr);
-  });
+ rows.forEach((r, i) => {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>${i + 1}</td>
+    <td>${r.student_name}</td>
+    <td>${r.class_name}</td>
+    <td>${Number(r.total_points_sum || 0).toFixed(2)}</td>
+  `;
+  tbody.appendChild(tr);
+});
 }
 
 // تصدير CSV للوحة الشرف
