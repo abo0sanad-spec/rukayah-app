@@ -103,54 +103,62 @@
         </table>
       </div>
     </section>
-   <section id="coordinator" class="tab">
+<!-- لوحة الشرف (المنسقة) -->
+<section id="coordinator" class="tab">
   <div style="display:flex; justify-content:center;">
     <div class="card" style="text-align:center;">
       <h2 style="color:#b58500; font-size:28px; font-weight:bold; text-shadow:1px 1px 3px #d4af37; margin-bottom:8px;">
-         لوحة الشرف 
+         لوحة الشرف
       </h2>
       <p style="color:#166534; font-weight:bold; font-size:18px; margin-top:0;">
         🌸 نفخر بإنجازكنّ، فكل تميز يبدأ بخطوة! 🌸
       </p>
-      <table id="honorBoardTable"></table>
     </div>
   </div>
-</section>
-</div>
-  </header>
 
+  <!-- جدول لوحة الشرف -->
   <div class="hb-table-wrap">
     <table class="hb-table" dir="rtl">
-    <thead>
-  <tr>
-    <th>اسم الطالبة</th>
-    <th>الصف</th>
-    <th>عدد المبادرات</th>
-    <th>مجموع النقاط</th>
-  </tr>
-</thead>
+      <thead>
+        <tr>
+          <th>اسم الطالبة</th>
+          <th>الصف</th>
+          <th>عدد المبادرات</th>
+          <th>مجموع النقاط</th>
+        </tr>
+      </thead>
       <tbody id="honorBoardBody">
         <!-- يُملأ من الجافاسكربت -->
       </tbody>
     </table>
   </div>
+
+  <!-- أزرار التحكم -->
   <footer class="hb-footer">
     <button id="exportHonorCsv" type="button" class="hb-btn">تصدير CSV</button>
   </footer>
+
+  <!-- التقرير الشهري -->
+  <div class="card">
+    <h2>تقرير شهري حسب القيم</h2>
+    <table id="monthlyReport">
+      <thead>
+        <tr>
+          <th>الشهر</th>
+          <th>القيمة</th>
+          <th>عدد المبادرات</th>
+          <th>مجموع النقاط</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- تصدير تقرير المدرسة -->
+  <div class="card">
+    <button id="exportSchoolCsv">تصدير CSV — تقرير المدرسة</button>
+  </div>
 </section>
-      <div class="card">
-        <h2>تقرير شهري حسب القيم</h2>
-        <table id="monthlyReport">
-          <thead>
-            <tr><th>الشهر</th><th>القيمة</th><th>عدد المبادرات</th><th>مجموع النقاط</th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="card">
-        <button id="exportSchoolCsv">تصدير CSV — تقرير المدرسة</button>
-      </div>
-    </section>
   </main>
   <footer class="app-footer">
     <small>&copy;  مدرسة رقية الاسلمية - مديرة المدرسة: أ.أمل المهوس</small>
