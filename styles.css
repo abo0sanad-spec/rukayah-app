@@ -50,3 +50,71 @@ thead th{background:#f9fafb;color:#111}
   .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .form-grid textarea{grid-column:1/-1}
 }
+/* ===== Honor Board (Table) ===== */
+.hb-card{
+  background:#fff;
+  border:1px solid #e6eef3;
+  border-radius:14px;
+  padding:16px 18px;
+  box-shadow:0 4px 14px rgba(11,74,111,.06);
+  margin-block:16px;
+}
+.hb-header{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+  border-bottom:1px dashed #d7e5ee;
+  padding-bottom:8px;
+  margin-bottom:12px;
+}
+.hb-header h2{
+  margin:0;
+  font-size:18px;
+  color:#0b4a6f;          /* أزرق المدرسة */
+  letter-spacing:.2px;
+}
+.hb-sub{
+  margin:0;
+  color:#6b7f8d;
+  font-size:12px;
+}
+.hb-table-wrap{
+  overflow:auto;
+}
+.hb-table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  direction:rtl;
+  text-align:right;
+  font-size:14px;
+}
+.hb-table thead th{
+  background:#0b4a6f;
+  color:#fff;
+  padding:10px 12px;
+  font-weight:600;
+  position:sticky; top:0;
+}
+.hb-table tbody td{
+  background:#fff;
+  padding:10px 12px;
+  border-bottom:1px solid #eef5f9;
+}
+.hb-table tbody tr:hover td{
+  background:#f5fbff;
+}
+.hb-table tbody td:nth-child(4){
+  font-weight:700;
+  color:#0b4a6f;
+}
+.hb-footer{
+  display:flex; justify-content:flex-start; gap:8px;
+  padding-top:10px;
+}
+.hb-btn{
+  background:#0b4a6f; color:#fff; border:0;
+  padding:8px 14px; border-radius:10px; cursor:pointer;
+}
+.hb-btn:hover{ filter:brightness(1.07); }
