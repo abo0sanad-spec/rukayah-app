@@ -313,39 +313,36 @@ document.querySelector("#pendingTable")?.addEventListener("click", (e) => {
  *  لوحة الشرف (جدول ثابت)
  *****************************************/
 async function loadHonorBoard(){
-  const tbody = document.getElementById("honorBoardBody");
+  const tbody = document.getElementById('honorBoardBody');
   if (!tbody) return;
-  tbody.innerHTML = "";
+  tbody.innerHTML = '';
 
-  // 1) حاول القراءة من العرض الثابت (إن وُجد)
-  let data = null, error = null;
+  // 1) نجلب البيانات من الـ VIEW الجديد (الذي أنشأناه في SQL)
+  const { data, error } = await supabase
+    .from('honor_board_all_time')
+    .select('*');
 
-  ({ data, error } = await supabase
-    .from("honor_board_all_time")
-    .select("*"));
-
-  // 2) إن لم يوجد العرض، استخدم الجدول/العرض الأسبوعي كحل بديل
-  if (error || !Array.isArray(data)) {
-    const res = await supabase.from("initiatives_weekly").select("*");
-    data = res.data || [];
+  if (error) {
+    console.error('honor_board_all_time error:', error);
+    return;
   }
 
-  // ترتيب تنازليًا حسب مجموع النقاط (بدون حد أعلى)
+  // 2) نرتّب تنازليًا حسب مجموع النقاط
   const rows = (data || [])
-    .slice() // نسخة حتى لا نعدل الأصل
-    .sort((a,b)=>(Number(b.total_points_sum||0) - Number(a.total_points_sum||0)));
+    .slice()
+    .sort((a, b) => Number(b.total_points_sum || 0) - Number(a.total_points_sum || 0));
 
-  // تعبئة الجدول
- rows.forEach((r, i) => {
-  const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td>${i + 1}</td>
-    <td>${r.student_name}</td>
-    <td>${r.class_name}</td>
-    <td>${Number(r.total_points_sum || 0).toFixed(2)}</td>
-  `;
-  tbody.appendChild(tr);
-});
+  // 3) نبني الصفوف — ملاحظة: الرقم مدموج داخل خانة "اسم الطالبة" فقط
+  rows.forEach((r, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${idx + 1} - ${r.student_name || ''}</td>
+      <td>${r.class_name || ''}</td>
+      <td>${Number(r.initiatives_count ?? 0)}</td>
+      <td>${Number(r.total_points_sum ?? 0).toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
 
 // تصدير CSV للوحة الشرف
