@@ -310,24 +310,71 @@ document.querySelector("#pendingTable")?.addEventListener("click", (e) => {
 });
 
 /*****************************************
- *  لوحة الشرف الأسبوعية
+ *  لوحة الطالبات المتميزات (جدول ثابت)
  *****************************************/
-async function loadHonorBoard() {
-  const list = document.getElementById("honorBoard");
-  if (!list) return;
-  list.innerHTML = "";
+async function loadHonorBoard(){
+  const tbody = document.getElementById("honorBoardBody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
 
-  const { data, error } = await supabase.from("initiatives_weekly").select("*");
-  if (error) return;
+  // 1) حاول القراءة من العرض الثابت (إن وُجد)
+  let data = null, error = null;
 
- const top = (data || []).sort((a, b) => b.total_points_sum - a.total_points_sum);
-  top.forEach((r) => {
-    const li = document.createElement("li");
-    li.textContent = `${r.student_name} — ${r.class_name} — ${r.total_points_sum.toFixed(2)} نقطة`;
-    list.appendChild(li);
+  ({ data, error } = await supabase
+    .from("honor_board_all_time")
+    .select("*"));
+
+  // 2) إن لم يوجد العرض، استخدم الجدول/العرض الأسبوعي كحل بديل
+  if (error || !Array.isArray(data)) {
+    const res = await supabase.from("initiatives_weekly").select("*");
+    data = res.data || [];
+  }
+
+  // ترتيب تنازليًا حسب مجموع النقاط (بدون حد أعلى)
+  const rows = (data || [])
+    .slice() // نسخة حتى لا نعدل الأصل
+    .sort((a,b)=>(Number(b.total_points_sum||0) - Number(a.total_points_sum||0)));
+
+  // تعبئة الجدول
+  rows.forEach(r=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${r.student_name||""}</td>
+      <td>${r.class_name||""}</td>
+      <td>${r.initiatives_count ?? "-"}</td>
+      <td>${Number(r.total_points_sum||0).toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
   });
 }
 
+// تصدير CSV للوحة الشرف
+document.getElementById("exportHonorCsv")?.addEventListener("click", async ()=>{
+  // إعادة استخدام نفس المصدر المستخدم في العرض
+  let data = null, error = null;
+
+  ({ data, error } = await supabase
+    .from("honor_board_all_time")
+    .select("*"));
+
+  if (error || !Array.isArray(data)) {
+    const fallback = await supabase.from("initiatives_weekly").select("*");
+    data = fallback.data || [];
+  }
+
+  // تجهيز البيانات للتصدير
+  const rows = (data || [])
+    .slice()
+    .sort((a,b)=>(Number(b.total_points_sum||0) - Number(a.total_points_sum||0)))
+    .map(r=>({
+      "الطالبة": r.student_name||"",
+      "الصف": r.class_name||"",
+      "عدد المبادرات": r.initiatives_count ?? "",
+      "مجموع النقاط": Number(r.total_points_sum||0).toFixed(2),
+    }));
+
+  downloadCSV("الطالبات_المتميزات.csv", rows);
+});
 /*****************************************
  *  التقرير الشهري حسب القيم
  *****************************************/
