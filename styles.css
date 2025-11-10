@@ -151,3 +151,11 @@ button.secondary:hover {
   background-color: #d4af37;   /* ذهبي فاتح */
   color: #0b3d91;              /* أزرق ملكي */
 }
+/* كل تبويب يكون مخفي ما لم يكن مفعّل */
+.tab {
+  display: none;
+}
+
+.tab.active {
+  display: block;
+}
