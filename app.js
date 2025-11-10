@@ -310,7 +310,7 @@ document.querySelector("#pendingTable")?.addEventListener("click", (e) => {
 });
 
 /*****************************************
- *  لوحة الطالبات المتميزات (جدول ثابت)
+ *  لوحة الشرف (جدول ثابت)
  *****************************************/
 async function loadHonorBoard(){
   const tbody = document.getElementById("honorBoardBody");
@@ -336,7 +336,7 @@ async function loadHonorBoard(){
     .sort((a,b)=>(Number(b.total_points_sum||0) - Number(a.total_points_sum||0)));
 
   // تعبئة الجدول
-  rows.forEach(r=>{
+  rows.forEach((r, i) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${r.student_name||""}</td>
